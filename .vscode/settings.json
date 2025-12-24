@@ -1,0 +1,28 @@
+{
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+
+  "terminal.integrated.profiles.windows": {
+    "Git Bash": {
+      "path": [
+        "C:\\Program Files\\Git\\bin\\bash.exe",
+        "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      ],
+      "args": ["-l"],
+      "icon": "terminal-bash"
+    }
+  },
+
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // JavaScript/TypeScript settings
+  "javascript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "javascript.suggest.autoImports": true,
+  "typescript.suggest.autoImports": true,
+  "javascript.validate.enable": true,
+  "typescript.validate.enable": false
+}

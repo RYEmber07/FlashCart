@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.test
+.env.*.local
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Internal/Sensitive Documentation (Personal Notes - Not for GitHub)
+PERSONAL_NOTES/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.jest_cache/
+coverage/
+
+
