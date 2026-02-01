@@ -1,0 +1,935 @@
+{
+  "info": {
+    "name": "FlashCart Backend API",
+    "_postman_id": "flashcart-backend-collection",
+    "description": "Complete API collection for the FlashCart hyperlocal delivery backend.\n\n**Setup:**\n1. Import this collection into Postman.\n2. Create a new Environment with these variables (all empty to start):\n   - `BASE_URL` = `http://localhost:5000/api/v1`\n   - `TOKEN` (user access token — auto-set by login)\n   - `ADMIN_TOKEN` (admin access token — auto-set by admin login)\n   - `RIDER_TOKEN` (rider access token — auto-set by rider login)\n   - `CATEGORY_ID`, `STORE_ID`, `PRODUCT_ID`, `ADDRESS_ID`, `ORDER_ID`, `RIDER_ID`\n\n**Test Order:** Auth → Admin Setup → Products → Cart → Checkout → Rider → Admin Orders",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Auth (User)",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"contactNumber\": \"9876543210\",\n  \"password\": \"SecurePass1\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/register",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('TOKEN', res.data.accessToken);",
+                  "  console.log('USER TOKEN saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactNumber\": \"9876543210\",\n  \"password\": \"SecurePass1\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('ADMIN_TOKEN', res.data.accessToken);",
+                  "  console.log('ADMIN TOKEN saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactNumber\": \"9999999999\",\n  \"password\": \"AdminPass1\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get My Sessions",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/auth/sessions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"PASTE_REFRESH_TOKEN_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/refresh-token",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "refresh-token"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/auth/logout",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Logout All Sessions",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/auth/sessions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "sessions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. User Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/user/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/user/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "me"]
+            }
+          }
+        },
+        {
+          "name": "Add Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.environment.set('ADDRESS_ID', res.data._id);",
+                  "  console.log('ADDRESS_ID saved:', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"addressLine1\": \"123 Main Street, Sector 5\",\n  \"city\": \"Gurugram\",\n  \"pincode\": \"122001\",\n  \"coordinates\": [77.0425, 28.4089],\n  \"isDefault\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/user/address",
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "address"]
+            }
+          }
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"New Delhi\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/user/address/{{ADDRESS_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "address", "{{ADDRESS_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/user/address/{{ADDRESS_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "address", "{{ADDRESS_ID}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Admin — Categories",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.environment.set('CATEGORY_ID', res.data._id);",
+                  "  console.log('CATEGORY_ID saved:', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dairy & Bread\",\n  \"image\": \"https://via.placeholder.com/100\",\n  \"description\": \"Fresh dairy products and bakery items\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/categories",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "categories"]
+            }
+          }
+        },
+        {
+          "name": "List Categories (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/categories?page=1&limit=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "categories"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description for Dairy & Bread\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/categories/{{CATEGORY_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "categories", "{{CATEGORY_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Public Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/category",
+              "host": ["{{BASE_URL}}"],
+              "path": ["category"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Admin — Stores",
+      "item": [
+        {
+          "name": "Create Dark Store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.environment.set('STORE_ID', res.data._id);",
+                  "  console.log('STORE_ID saved:', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"GGN Sector 50 Hub\",\n  \"address\": \"Sector 50, Gurugram, Haryana\",\n  \"latitude\": 28.4089,\n  \"longitude\": 77.0425,\n  \"serviceRadius\": 5\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/stores",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "stores"]
+            }
+          }
+        },
+        {
+          "name": "Find Nearest Store",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/stores/nearest?latitude=28.4089&longitude=77.0425",
+              "host": ["{{BASE_URL}}"],
+              "path": ["stores", "nearest"],
+              "query": [
+                {"key": "latitude", "value": "28.4089"},
+                {"key": "longitude", "value": "77.0425"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Stores (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/stores",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "stores"]
+            }
+          }
+        },
+        {
+          "name": "Get Store Inventory",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/stores/{{STORE_ID}}/inventory",
+              "host": ["{{BASE_URL}}"],
+              "path": ["stores", "{{STORE_ID}}", "inventory"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Admin — Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.environment.set('PRODUCT_ID', res.data._id);",
+                  "  console.log('PRODUCT_ID saved:', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amul Toned Milk 500ml\",\n  \"description\": \"Pasteurized toned milk with 3% fat content\",\n  \"price\": 30,\n  \"discountPrice\": 27,\n  \"unit\": \"500 ml\",\n  \"category\": \"{{CATEGORY_ID}}\",\n  \"image\": \"https://via.placeholder.com/200\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/products",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "products"]
+            }
+          }
+        },
+        {
+          "name": "Add Stock to Store",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": \"{{STORE_ID}}\",\n  \"stock\": 100,\n  \"price\": 28\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/products/{{PRODUCT_ID}}/stock",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "products", "{{PRODUCT_ID}}", "stock"]
+            }
+          }
+        },
+        {
+          "name": "Get All Products (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/products?page=1&limit=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "products"]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discountPrice\": 25\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/products/{{PRODUCT_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "products", "{{PRODUCT_ID}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Browse Products (Public)",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/product",
+              "host": ["{{BASE_URL}}"],
+              "path": ["product"]
+            }
+          }
+        },
+        {
+          "name": "Get Products (With Location)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/product?latitude=28.4089&longitude=77.0425",
+              "host": ["{{BASE_URL}}"],
+              "path": ["product"],
+              "query": [
+                {"key": "latitude", "value": "28.4089"},
+                {"key": "longitude", "value": "77.0425"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/product?search=milk&sort=price_asc",
+              "host": ["{{BASE_URL}}"],
+              "path": ["product"],
+              "query": [
+                {"key": "search", "value": "milk"},
+                {"key": "sort", "value": "price_asc"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/product/{{PRODUCT_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "{{PRODUCT_ID}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Cart",
+      "item": [
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{PRODUCT_ID}}\",\n  \"storeId\": \"{{STORE_ID}}\",\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/cart/add",
+              "host": ["{{BASE_URL}}"],
+              "path": ["cart", "add"]
+            }
+          }
+        },
+        {
+          "name": "View Cart",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/cart",
+              "host": ["{{BASE_URL}}"],
+              "path": ["cart"]
+            }
+          }
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{PRODUCT_ID}}\",\n  \"storeId\": \"{{STORE_ID}}\",\n  \"quantity\": 3\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/cart/update",
+              "host": ["{{BASE_URL}}"],
+              "path": ["cart", "update"]
+            }
+          }
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/cart/remove/{{PRODUCT_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["cart", "remove", "{{PRODUCT_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/cart/clear",
+              "host": ["{{BASE_URL}}"],
+              "path": ["cart", "clear"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Checkout & Orders",
+      "item": [
+        {
+          "name": "Checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.order && res.data.order._id) {",
+                  "  pm.environment.set('ORDER_ID', res.data.order._id);",
+                  "  console.log('ORDER_ID saved:', res.data.order._id);",
+                  "  console.log('clientSecret:', res.data.payment.clientSecret);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/order/checkout",
+              "host": ["{{BASE_URL}}"],
+              "path": ["order", "checkout"]
+            }
+          }
+        },
+        {
+          "name": "Get Order History",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/order/history?page=1",
+              "host": ["{{BASE_URL}}"],
+              "path": ["order", "history"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/order/{{ORDER_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["order", "{{ORDER_ID}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Admin — Orders",
+      "item": [
+        {
+          "name": "List All Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/orders?page=1",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "orders"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/orders/stats/overview",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "orders", "stats", "overview"]
+            }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/orders/{{ORDER_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "orders", "{{ORDER_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PREPARING\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/orders/{{ORDER_ID}}/status",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "orders", "{{ORDER_ID}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Rider",
+      "item": [
+        {
+          "name": "Create Rider (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.environment.set('RIDER_ID', res.data._id);",
+                  "  console.log('RIDER_ID saved:', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rahul Rider\",\n  \"phone\": \"8888877777\",\n  \"password\": \"RiderPass1\",\n  \"storeId\": \"{{STORE_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/admin/riders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "riders"]
+            }
+          }
+        },
+        {
+          "name": "Rider Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.environment.set('RIDER_TOKEN', res.data.accessToken);",
+                  "  console.log('RIDER TOKEN saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"8888877777\",\n  \"password\": \"RiderPass1\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/riders/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["riders", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Go Online (Available)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{RIDER_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/riders/status",
+              "host": ["{{BASE_URL}}"],
+              "path": ["riders", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{RIDER_TOKEN}}"}
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/riders/current-order",
+              "host": ["{{BASE_URL}}"],
+              "path": ["riders", "current-order"]
+            }
+          }
+        },
+        {
+          "name": "Complete Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{RIDER_TOKEN}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{ORDER_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/riders/complete-delivery",
+              "host": ["{{BASE_URL}}"],
+              "path": ["riders", "complete-delivery"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Security Tests",
+      "item": [
+        {
+          "name": "Invalid ObjectId (expect 400)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/product/not-a-valid-id",
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "not-a-valid-id"]
+            }
+          }
+        },
+        {
+          "name": "Admin Route as User (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/admin/health",
+              "host": ["{{BASE_URL}}"],
+              "path": ["admin", "health"]
+            }
+          }
+        },
+        {
+          "name": "Protected Route Without Token (expect 401)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/user/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "me"]
+            }
+          }
+        },
+        {
+          "name": "Someone Else's Order (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/order/000000000000000000000001",
+              "host": ["{{BASE_URL}}"],
+              "path": ["order", "000000000000000000000001"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
