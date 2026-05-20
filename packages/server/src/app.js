@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -12,6 +13,7 @@ import {
   securityHeaders,
   sanitizeInput,
   preventParameterPollution,
+  defaultCSP,
 } from './middlewares/security.middleware.js';
 
 // Import Routes and Error Handling
@@ -31,6 +33,7 @@ app.use(
   })
 );
 app.use(securityHeaders); // Sets Secure HTTP Headers
+app.use(defaultCSP); // Apply default CSP for non-docs routes
 app.use(globalLimiter); // Basic protection for all paths
 
 // 3. Webhook Body Parsing (Stripe)
@@ -61,13 +64,19 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // 7. Static Files
-app.use(express.static('public'));
+// Serve a no-op favicon to avoid a 404 noise from browsers
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// 8. API Routes with API-specific Rate Limiting
-// This protects your database routes more strictly than static files
+// Serve local Swagger UI assets for docs without external CDN dependencies.
+app.use(
+  '/api/v1/docs/static',
+  express.static(path.resolve('node_modules/swagger-ui-dist'))
+);
+
+// 8. API Routes
 app.use('/api/v1', apiLimiter, rootRouter);
 
-// 9. Global Error Handler (Hides stack traces in production)
+// 9. Error Handling (must be last middleware)
 app.use(errorHandler);
 
 export default app;

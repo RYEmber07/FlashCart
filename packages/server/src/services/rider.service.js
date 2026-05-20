@@ -47,7 +47,7 @@ export const assignRiderToOrder = async (riderId, orderId, session) => {
       status: RIDER_STATUS.BUSY,
       currentOrder: orderId,
     },
-    { session, new: true }
+    { session, returnDocument: 'after' }
   );
 
   if (!result) {

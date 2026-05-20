@@ -47,7 +47,8 @@ export const createPaymentIntent = async (orderId) => {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     };
-  } catch {
+  } catch (error) {
+    console.error('Stripe initialization failed:', error);
     throw new ApiError(
       HTTP_STATUS.INTERNAL_SERVER_ERROR,
       'Failed to initiate payment with Stripe'

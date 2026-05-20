@@ -34,7 +34,7 @@ const seedDatabase = async () => {
       role: 'admin',
     });
 
-    await User.insertMany([
+    await User.create([
       {
         name: 'Rahul Kumar',
         contactNumber: '9876543210',
@@ -86,7 +86,7 @@ const seedDatabase = async () => {
 
     // Create Categories
     console.log('📁 Creating categories...');
-    const categories = await Category.insertMany([
+    const categories = await Category.create([
       {
         name: 'Milk & Dairy',
         image: 'https://via.placeholder.com/200?text=Dairy',
@@ -145,7 +145,7 @@ const seedDatabase = async () => {
 
     // Create Products
     console.log('📦 Creating products...');
-    const products = await Product.insertMany([
+    const products = await Product.create([
       // Dairy Products
       {
         name: 'Amul Toned Milk 500ml',
@@ -235,7 +235,7 @@ const seedDatabase = async () => {
         inventoryData.push({
           storeId: store._id,
           productId: product._id,
-          stock: 50 + Math.random() * 150,
+          stock: 50 + Math.floor(Math.random() * 151),
           price: product.price,
         });
       });
@@ -246,20 +246,20 @@ const seedDatabase = async () => {
 
     // Create Riders
     console.log('🚗 Creating riders...');
-    await Rider.insertMany([
+    await Rider.create([
       {
         name: 'Rahul Delivery',
         phone: '8888877777',
         password: 'RiderPassword123',
         store: stores[0]._id,
-        status: 'offline',
+        status: 'available',
       },
       {
         name: 'Priya Express',
         phone: '8888877778',
         password: 'RiderPassword123',
         store: stores[0]._id,
-        status: 'offline',
+        status: 'available',
       },
       {
         name: 'Amit Fast',
@@ -295,8 +295,8 @@ const seedDatabase = async () => {
     console.log('   User 1:   9876543210 / UserPassword123');
     console.log('   User 2:   9988776655 / UserPassword123');
     console.log('   User 3:   9123456789 / UserPassword123');
-    console.log('   Rider 1:  8888877777 / RiderPassword123');
-    console.log('   Rider 2:  8888877778 / RiderPassword123');
+    console.log('   Rider 1:  8888877777 / RiderPassword123 (available)');
+    console.log('   Rider 2:  8888877778 / RiderPassword123 (available)');
     console.log('   Rider 3:  8888877779 / RiderPassword123');
     console.log('   Rider 4:  8888877780 / RiderPassword123');
     console.log('='.repeat(50) + '\n');

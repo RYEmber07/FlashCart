@@ -1,50 +1,52 @@
 import mongoose from 'mongoose';
 
+const hasReplicaSetTopology = () => {
+  const topology = mongoose.connection.client?.topology;
+
+  return Boolean(
+    topology &&
+      (topology.type === 'ReplicaSetNoPrimary' ||
+        topology.type === 'ReplicaSetWithPrimary' ||
+        topology.description?.type?.includes('ReplicaSet'))
+  );
+};
+
 /**
  * Executes a function within a MongoDB transaction if supported.
  * Falls back to normal execution if the database is standalone.
  *
  * @param {Function} work - Async function to execute. Receives the session object.
+ * @param {Object} [options] - Transaction execution options.
+ * @param {boolean} [options.requireReplicaSet=false] - Throw instead of falling back when transactions are unavailable.
  * @returns {Promise<any>} Result of the work function.
  */
-export const runInTransaction = async (work) => {
-  // Check if transactions are supported (requires replica set)
-  // We can check the connection's topology or simply try/catch the session start
-  // but a more reliable way in Mongoose is to check the replicaSet property
-  // or use a flag.
+export const runInTransaction = async (
+  work,
+  { requireReplicaSet = false } = {}
+) => {
+  const isReplicaSet = hasReplicaSetTopology();
 
-  // For local development robustness, we'll check the connection string components
-  // or try to start a session and handle the specific error.
+  if (!isReplicaSet) {
+    const message =
+      'MongoDB replica set is required for this transactional workflow.';
 
-  const conn = mongoose.connection;
-  const isReplicaSet =
-    conn.client.topology &&
-    (conn.client.topology.type === 'ReplicaSetNoPrimary' ||
-      conn.client.topology.type === 'ReplicaSetWithPrimary' ||
-      conn.client.topology.description?.type?.includes('ReplicaSet'));
+    if (requireReplicaSet || process.env.NODE_ENV === 'production') {
+      throw new Error(message);
+    }
 
-  // If not a replica set, just run the work without a session
-  if (!isReplicaSet && process.env.NODE_ENV !== 'production') {
-    // console.warn(
-    //   '⚠️ [DB] Standalone MongoDB detected. Running without transaction.'
-    // );
     return await work(null);
   }
 
   const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    const result = await work(session);
-    await session.commitTransaction();
+    let result;
+    await session.withTransaction(async () => {
+      result = await work(session);
+    });
     return result;
-  } catch (error) {
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
-    throw error;
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 };
 

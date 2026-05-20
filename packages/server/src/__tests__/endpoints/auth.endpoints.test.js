@@ -9,12 +9,9 @@
  * - Session management
  */
 
-import 'dotenv/config';
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import mongoose from 'mongoose';
 import app from '../../app.js';
-import connectDB from '../../db/index.js';
 import { User } from '../../models/index.js';
 
 describe('🔐 Auth Endpoints', () => {
@@ -22,9 +19,6 @@ describe('🔐 Auth Endpoints', () => {
   let refreshToken = '';
 
   beforeAll(async () => {
-    // Connect to database
-    await connectDB();
-
     // Clear existing test users
     await User.deleteMany({
       contactNumber: { $in: ['9999999999', '9888888888', '9777777777'] },
@@ -36,8 +30,6 @@ describe('🔐 Auth Endpoints', () => {
     await User.deleteMany({
       contactNumber: { $in: ['9999999999', '9888888888', '9777777777'] },
     });
-    // Close database connection to prevent hanging
-    await mongoose.disconnect();
   });
 
   // ==================== Registration Tests ====================

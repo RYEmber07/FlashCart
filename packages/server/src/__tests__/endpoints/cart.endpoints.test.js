@@ -9,12 +9,9 @@
  * - Cart validation and error handling
  */
 
-import 'dotenv/config';
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import mongoose from 'mongoose';
 import app from '../../app.js';
-import connectDB from '../../db/index.js';
 import {
   User,
   Product,
@@ -30,9 +27,6 @@ describe('🛒 Cart Endpoints', () => {
   let userId = '';
 
   beforeAll(async () => {
-    // Connect to database
-    await connectDB();
-
     // Cleanup
     await Promise.all([
       User.deleteMany({ contactNumber: { $in: ['9876543210'] } }),
@@ -60,6 +54,7 @@ describe('🛒 Cart Endpoints', () => {
       serviceRadius: 10,
     });
     storeId = store._id;
+    await DarkStore.syncIndexes();
 
     // Create test product
     const product = await Product.create({
@@ -120,8 +115,6 @@ describe('🛒 Cart Endpoints', () => {
       DarkStore.deleteMany({}),
       StoreInventory.deleteMany({}),
     ]);
-    // Close database connection to prevent hanging
-    await mongoose.disconnect();
   });
 
   // ==================== Get Cart Tests ====================
@@ -154,8 +147,7 @@ describe('🛒 Cart Endpoints', () => {
           storeId: storeId.toString(),
         });
 
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300); // 2xx success
+      expect(res.status).toBe(200);
     });
 
     it('should reject adding without authentication', async () => {
@@ -217,90 +209,47 @@ describe('🛒 Cart Endpoints', () => {
   });
 
   // ==================== Update Cart Item Tests ====================
-  describe('PATCH /api/v1/cart/item/:itemId', () => {
-    let itemId = '';
-
-    beforeAll(async () => {
-      // Get cart to find item ID
-      const res = await request(app)
-        .get('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`);
-
-      if (
-        res.body.data &&
-        res.body.data.items &&
-        res.body.data.items.length > 0
-      ) {
-        itemId = res.body.data.items[0]._id;
-      }
-    });
-
+  describe('PUT /api/v1/cart/update', () => {
     it('should update item quantity', async () => {
-      if (!itemId) {
-        return; // Skip if no item added
-      }
-
       const res = await request(app)
-        .patch(`/api/v1/cart/item/${itemId}`)
+        .put('/api/v1/cart/update')
         .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: 3 });
+        .send({
+          productId: productId.toString(),
+          storeId: storeId.toString(),
+          quantity: 3,
+        });
 
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
     });
 
-    it('should reject invalid quantity', async () => {
-      if (!itemId) {
-        return; // Skip if no item added
-      }
-
+    it('should reject negative quantity', async () => {
       const res = await request(app)
-        .patch(`/api/v1/cart/item/${itemId}`)
+        .put('/api/v1/cart/update')
         .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: -1 });
+        .send({
+          productId: productId.toString(),
+          storeId: storeId.toString(),
+          quantity: -1,
+        });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBe(400);
     });
   });
 
   // ==================== Remove from Cart Tests ====================
-  describe('DELETE /api/v1/cart/item/:itemId', () => {
-    let itemId = '';
-
-    beforeAll(async () => {
-      // Get cart to find item ID
-      const res = await request(app)
-        .get('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`);
-
-      if (
-        res.body.data &&
-        res.body.data.items &&
-        res.body.data.items.length > 0
-      ) {
-        itemId = res.body.data.items[0]._id;
-      }
-    });
-
+  describe('DELETE /api/v1/cart/remove/:productId', () => {
     it('should remove item from cart', async () => {
-      if (!itemId) {
-        return; // Skip if no item in cart
-      }
-
       const res = await request(app)
-        .delete(`/api/v1/cart/item/${itemId}`)
+        .delete(`/api/v1/cart/remove/${productId.toString()}`)
         .set('Authorization', `Bearer ${userToken}`);
 
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
     });
 
     it('should reject remove without authentication', async () => {
-      if (!itemId) {
-        return; // Skip if no item in cart
-      }
-
-      const res = await request(app).delete(`/api/v1/cart/item/${itemId}`);
+      const res = await request(app)
+        .delete(`/api/v1/cart/remove/${productId.toString()}`);
 
       expect(res.status).toBe(401);
     });
@@ -317,8 +266,8 @@ describe('🛒 Cart Endpoints', () => {
           quantity: 1,
         });
 
-      // Should either succeed or give clear error
-      expect([200, 201, 400, 422]).toContain(res.status);
+      // Missing storeId should return 400 Bad Request
+      expect(res.status).toBe(400);
     });
   });
 });

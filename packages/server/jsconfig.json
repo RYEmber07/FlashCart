@@ -9,6 +9,7 @@
     "checkJs": false,
     "noEmit": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "strict": false,
     "types": ["node"]
   },

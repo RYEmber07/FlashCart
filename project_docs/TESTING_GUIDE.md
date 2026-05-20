@@ -9,7 +9,7 @@ cd packages/server
 npm test
 ```
 
-✅ **38 automated tests** covering registration, login, cart operations, and validation.
+✅ **~60 automated tests** covering authentication, cart operations, checkout-to-webhook payment lifecycle, RBAC enforcement, and validation.
 
 ### Manual Testing with Postman
 
@@ -29,9 +29,9 @@ Use Postman or cURL to manually test endpoints following the sections below.
 ## Testing Strategy
 
 ### Automated Tests
-- **Unit Tests (11):** Focused on input validation and utility logic.
-- **Integration Tests (27):** End-to-end HTTP requests targeting Express endpoints with a dedicated MongoDB test instance.
-- **Scope:** Coverage includes authentication flows, cart state management, JWT rotation, and global error handling.
+- **Unit Tests (15+):** Focused on input validation, utility logic, and controller isolation.
+- **Integration Tests (45+):** End-to-end HTTP requests targeting Express endpoints with an in-memory MongoDB replica set (via mongodb-memory-server).
+- **Scope:** Coverage includes authentication flows, cart state management, the full checkout→webhook payment lifecycle (with Stripe mocks), RBAC boundary enforcement, JWT rotation, and global error handling.
 
 **Execution Commands:**
 
@@ -183,12 +183,7 @@ socket.on("payment_status", (data) => {
   console.log("Order Update:", data);
 });
 ```
-    password: "SecurePass1",
-  });
 
-  expect(result.success).toBe(true);
-});
-```
 
 **Integration Test (Endpoint):**
 
@@ -207,29 +202,14 @@ it("should login user and return tokens", async () => {
 });
 ```
 
-### Running Endpoint Tests (Advanced)
+### Running Endpoint Tests
 
-To test actual HTTP endpoints, you need:
+Endpoint tests run automatically with the full suite. No external MongoDB instance is required — the test harness uses `mongodb-memory-server` to spin up an in-memory replica set.
 
-1. **Start MongoDB:**
-
-   ```bash
-   mongod
-   ```
-
-2. **Create `.env.test` (optional):**
-
-   ```bash
-   cp .env.test.example .env.test
-   # Modify if needed for your local test environment
-   ```
-
-3. **Uncomment endpoint tests** in `/src/__tests__/endpoints/`
-
-4. **Run tests:**
-   ```bash
-   npm test
-   ```
+```bash
+npm test                    # Runs all tests (unit + endpoint + service)
+npm test -- --testPathPattern=endpoints   # Run only endpoint tests
+```
 
 ### Environment Configuration
 
@@ -268,15 +248,6 @@ To expand test coverage:
    ```
 4. **Run tests:** `npm test`
 
-### Continuous Integration Ready
+### Continuous Integration
 
-The test setup is ready for CI/CD pipelines. To integrate with GitHub Actions or similar:
-
-```yaml
-# Example workflow
-- name: Run tests
-  run: npm test -- --coverage
-
-- name: Upload coverage
-  run: npx codecov
-```
+The project includes a GitHub Actions workflow at `.github/workflows/ci.yml` that runs lint and tests on every push and PR to `main`. The CI environment uses dummy secrets and requires no external services.

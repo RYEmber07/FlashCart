@@ -82,28 +82,20 @@ graph TB
 3.  **Payload Processing:** JSON body parsing and NoSQL injection sanitization.
 4.  **Validation:** Route-specific Zod schema enforcement.
 5.  **Authentication:** JWT verification with session rotation logic.
-6.  **Orchestration:** Controller layer extracts input and delegatest to specialized Services.
-7.  **Business Logic:** Service layer executes DB transactions and external# API Reference
-
-> **Base URL:** `http://localhost:5000/api/v1`
->
-> All endpoints return a standardized JSON response: `{ statusCode, data, message, success }`
+6.  **Orchestration:** Controller layer extracts input and delegates to specialized Services.
+7.  **Business Logic:** Service layer executes DB transactions and external API calls.
+8.  **Response:** Standardized `ApiResponse` or `ApiError` returned to client.
 
 ---
 
-## Authentication Patterns
+## Key Design Decisions
 
-FlashCart supports two primary authentication methods:
-
-- **Cookie-based:** `accessToken` (httpOnly), automatically handled by modern browsers.
-- **Header-based:** `Authorization: Bearer <jwt>`, for mobile or third-party clients.
-. This mirrors the real-world constraint where each order is fulfilled by a specific warehouse. Switching stores triggers a cart reset to avoid cross-store fulfillment complexity.
+### 1. Single-Store Cart Lock
+Each cart is bound to exactly one DarkStore. This mirrors the real-world constraint where each order is fulfilled by a specific warehouse. Switching stores triggers a cart reset to avoid cross-store fulfillment complexity.
 
 ### 2. Snapshot-Based Orders
 To ensure historical accuracy, orders store copies of item details (names, prices, images) and the delivery address as they existed at checkout. This prevents historical orders from being affected by future product or profile changes.
 
-### 3. Post-Payment Stock Deduction
-To ensure historical accuracy, orders store copies of item details (names, prices, images) and the delivery address as they existed at checkout. This prevents historical orders from being affected by future product or profile changes.
 
 ### 3. Post-Payment Stock Deduction
 Inventory is deducted from `StoreInventory` only after Stripe confirms payment. This avoids "locked" stock from abandoned carts. Atomic `findOneAndUpdate` operations with `$gte` guards prevent overselling during high-concurrency periods.

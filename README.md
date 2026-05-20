@@ -1,6 +1,8 @@
-# FlashCart: Production-Grade Hyperlocal Backend API
+# FlashCart: Hyperlocal Delivery Backend API
 
-A robust **RESTful API for hyperlocal delivery services**, designed for high-concurrency and data integrity. Built with a modern Node.js stack including Express 5, MongoDB, Stripe integration, and real-time updates via Socket.IO.
+[![FlashCart CI](https://github.com/RYEmber07/FlashCart/actions/workflows/ci.yml/badge.svg)](https://github.com/RYEmber07/FlashCart/actions/workflows/ci.yml)
+
+A robust **API-first backend for hyperlocal delivery services**, built with Express 5, MongoDB, Stripe integration, and real-time updates via Socket.IO.
 
 This project demonstrates system design principles required for instant-delivery platforms, handling complex workflows like atomic inventory management and geospatial rider assignment.
 
@@ -10,7 +12,7 @@ This project demonstrates system design principles required for instant-delivery
 - **Atomic Checkout** — Implements MongoDB transactions to ensure data consistency during order placement.
 - **Financial Integration** — Secure Stripe PaymentIntent workflow with automated webhook validation.
 - **Live Event Stream** — Authenticated Socket.IO integration for real-time order status updates.
-- **Multi-Device Session Management** — Secure JWT architecture with per-device refresh token rotation.
+- **Multi-Device Session Management** — Secure JWT architecture with per-device refresh token rotation. Device management: users can view all active sessions and logout from specific devices or all devices remotely.
 - **Granular RBAC** — Distinct authentication flows and permission levels for Users, Admins, and Riders.
 - **Advanced Security** — Hardened with Helmet, intelligent rate limiting, and Zod-driven schema validation.
 
@@ -44,6 +46,8 @@ cp .env.example .env
 npm run dev
 ```
 
+API docs are available at `http://localhost:5000/api/v1/docs`.
+
 ## Primary API Endpoints
 
 **Authentication**
@@ -53,13 +57,13 @@ npm run dev
 - `GET /auth/sessions` — Active session monitoring
 
 **Catalog & Cart**
-- `GET /products` — Item discovery with geo-filtering
+- `GET /product` — Item discovery with geo-filtering
 - `POST /cart/add` — Secure cart mutation
 - `GET /cart` — Verified cart state
 
 **Order Lifecycle**
-- `POST /orders/checkout` — Atomic order creation
-- `GET /orders/:id` — Detailed status tracking
+- `POST /order/checkout` — Atomic order creation
+- `GET /order/:id` — Detailed status tracking
 - `POST /webhooks/stripe` — Asynchronous payment processing
 
 Full documentation is available in the [project_docs](./project_docs) directory.
@@ -91,7 +95,7 @@ packages/server/
 ## Resilience & Quality
 
 ### Security
-The API implementes several layers of defense:
+The API implements several layers of defense:
 - Multi-tier rate limiting to prevent DDoS and brute force.
 - HTTP security headers via Helmet.
 - Automated payload sanitization to prevent NoSQL injection.
@@ -117,10 +121,13 @@ npm run test:watch
 npm run test:coverage
 ```
 
-## Performance Benchmarks
-- **Latency:** ~50-80ms per request (standard DB ops).
-- **Concurrency:** Architected for 1000+ concurrent Socket.IO connections.
-- **Throughput:** Capable of handling hundreds of atomic transactions per minute.
+## Demo Credentials
+
+After `npm run seed`, you can use:
+
+- `Admin: 9999999999 / AdminPassword123`
+- `User: 9876543210 / UserPassword123`
+- `Rider: 8888877777 / RiderPassword123`
 
 ## Author
 

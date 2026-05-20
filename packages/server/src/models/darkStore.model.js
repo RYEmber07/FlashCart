@@ -63,10 +63,14 @@ const darkStoreSchema = new mongoose.Schema(
 // Index for active stores
 darkStoreSchema.index({ isActive: 1 });
 
+// Standalone 2dsphere index for queries without isActive prefix (e.g. querying store by _id with $geoNear)
+darkStoreSchema.index({ location: '2dsphere' });
+
 // Compound index for active store queries
 // ESR (equality, sort, range): guideline for ordering fields in a MongoDB compound index to maximize performance.
 // This index supports both geospatial sorting and isActive filtering.
 darkStoreSchema.index({ isActive: 1, location: '2dsphere' });
+
 
 darkStoreSchema.methods.toJSON = function () {
   const storeObject = this.toObject();

@@ -13,17 +13,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     defaults:
       run:
         working-directory: packages/server
@@ -48,7 +37,6 @@ jobs:
         env:
           CI: true
           NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017
           ACCESS_TOKEN_SECRET: a_very_long_dummy_secret_for_testing_purposes_only
           REFRESH_TOKEN_SECRET: a_very_long_different_dummy_secret_for_testing_purposes_only
           ACCESS_TOKEN_EXPIRY_MS: 900000
@@ -56,3 +44,16 @@ jobs:
           STRIPE_SECRET_KEY: sk_test_dummy_key_for_testing
           STRIPE_WEBHOOK_SECRET: whsec_dummy_secret_for_testing
         run: npm test
+
+      - name: Coverage Report
+        if: always()
+        env:
+          CI: true
+          NODE_ENV: test
+          ACCESS_TOKEN_SECRET: a_very_long_dummy_secret_for_testing_purposes_only
+          REFRESH_TOKEN_SECRET: a_very_long_different_dummy_secret_for_testing_purposes_only
+          ACCESS_TOKEN_EXPIRY_MS: 900000
+          REFRESH_TOKEN_EXPIRY_MS: 604800000
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_testing
+          STRIPE_WEBHOOK_SECRET: whsec_dummy_secret_for_testing
+        run: npm run test:coverage || true

@@ -4,6 +4,27 @@ import ApiError from '../utils/apiError.js';
 import { HTTP_STATUS, ORDER_STATUS } from '../constants.js';
 import { runInTransaction, withSession } from '../utils/transaction.js';
 
+class InsufficientStockError extends Error {
+  constructor(orderId, storeId, productId) {
+    super('Insufficient stock to confirm this order');
+    this.name = 'InsufficientStockError';
+    this.orderId = orderId;
+    this.storeId = storeId;
+    this.productId = productId;
+  }
+}
+
+const markOrderAsFailed = async (orderId, paymentIntentId) => {
+  return await Order.findByIdAndUpdate(
+    orderId,
+    {
+      status: ORDER_STATUS.FAILED,
+      paymentIntentId,
+    },
+    { returnDocument: 'after' }
+  );
+};
+
 /**
  * Creates an order from user's cart with atomic transaction.
  * Validates cart, extracts store binding, creates order, and clears cart atomically.
@@ -199,90 +220,100 @@ export const getOrderDetails = async (orderId, userId) => {
  * @throws {Error} Throws if transaction fails, triggering a Stripe Retry.
  */
 export const confirmOrderPayment = async (orderId, paymentIntentId) => {
-  return await runInTransaction(async (session) => {
-    // 1. Fetch Order with Session Lock
-    const order = await withSession(Order.findById(orderId), session);
-    if (!order) {
-      throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Order not found');
-    }
-
-    // 2. Idempotency & State Guard
-    if (order.status !== ORDER_STATUS.PENDING_PAYMENT) {
-      return order;
-    }
-
-    // 3. Atomic Stock Deduction from Store Inventory
-    const { StoreInventory } =
-      await import('../models/storeInventory.model.js');
-
-    for (const item of order.items) {
-      const result = await StoreInventory.findOneAndUpdate(
-        {
-          storeId: order.storeId,
-          productId: item.product,
-          stock: { $gte: item.quantity },
-        },
-        { $inc: { stock: -item.quantity } },
-        { session, new: true }
-      );
-
-      if (!result) {
-        console.error(
-          `[STOCK_CRITIQUE] Order ${orderId} failed: Store ${order.storeId} has insufficient stock for product ${item.product}`
-        );
-
-        // For standalone instances, we can't truly "abort" mid-loop easily without a formal session,
-        // so we rely on the manual status update for cleanup or just accept partial consistency locally.
-        if (session && session.inTransaction()) {
-          await session.abortTransaction();
+  try {
+    return await runInTransaction(
+      async (session) => {
+        // 1. Fetch Order with Session Lock
+        const order = await withSession(Order.findById(orderId), session);
+        if (!order) {
+          throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Order not found');
         }
 
-        // Mark as FAILED
-        try {
-          await Order.findByIdAndUpdate(orderId, {
-            status: ORDER_STATUS.FAILED,
-          });
-        } catch (updateError) {
-          console.error(
-            `[CRITICAL] Failed to mark order ${orderId} as FAILED after stock error`,
-            updateError
+        // 2. Idempotency & State Guard
+        if (order.status !== ORDER_STATUS.PENDING_PAYMENT) {
+          return order;
+        }
+
+        // 3. Atomic Stock Deduction from Store Inventory
+        const { StoreInventory } =
+          await import('../models/storeInventory.model.js');
+
+        for (const item of order.items) {
+          const result = await StoreInventory.findOneAndUpdate(
+            {
+              storeId: order.storeId,
+              productId: item.product,
+              stock: { $gte: item.quantity },
+            },
+            { $inc: { stock: -item.quantity } },
+            { session, returnDocument: 'after' }
           );
+
+          if (!result) {
+            throw new InsufficientStockError(
+              orderId,
+              order.storeId,
+              item.product
+            );
+          }
         }
 
-        return null;
-      }
-    }
+        // 4. Rider Assignment
+        const { findAvailableRider, assignRiderToOrder } =
+          await import('./rider.service.js');
+        const { calculateStaticETA } = await import('../utils/eta.js');
 
-    // 4. Rider Assignment
-    const { findAvailableRider, assignRiderToOrder } =
-      await import('./rider.service.js');
-    const { calculateStaticETA } = await import('../utils/eta.js');
+        const availableRider = await findAvailableRider(order.storeId);
 
-    const availableRider = await findAvailableRider(order.storeId);
+        if (!availableRider) {
+          console.warn(`[RIDER] No riders available for order ${orderId}`);
+          order.status = ORDER_STATUS.CONFIRMED;
+        } else {
+          const eta = calculateStaticETA(order.deliveryDistance);
 
-    if (!availableRider) {
-      console.warn(`[RIDER] No riders available for order ${orderId}`);
-      order.status = ORDER_STATUS.CONFIRMED;
-    } else {
-      const eta = calculateStaticETA(order.deliveryDistance);
-      await assignRiderToOrder(availableRider._id, orderId, session);
+          try {
+            await assignRiderToOrder(availableRider._id, orderId, session);
+            order.assignedRider = availableRider._id;
+            order.estimatedDeliveryTime = eta;
+            order.status = ORDER_STATUS.OUT_FOR_DELIVERY;
 
-      order.assignedRider = availableRider._id;
-      order.estimatedDeliveryTime = eta;
-      order.status = ORDER_STATUS.OUT_FOR_DELIVERY;
+            console.log(
+              `[RIDER] Order ${orderId} assigned to rider ${availableRider._id} with ETA ${eta} minutes`
+            );
+          } catch (error) {
+            if (
+              error instanceof ApiError &&
+              error.statusCode === HTTP_STATUS.CONFLICT
+            ) {
+              console.warn(
+                `[RIDER] Rider ${availableRider._id} became unavailable during assignment for order ${orderId}`
+              );
+              order.status = ORDER_STATUS.CONFIRMED;
+            } else {
+              throw error;
+            }
+          }
+        }
 
-      console.log(
-        `[RIDER] Order ${orderId} assigned to rider ${availableRider._id} with ETA ${eta} minutes`
+        // 5. Update payment intent and save
+        order.paymentIntentId = paymentIntentId;
+
+        await order.save({ session });
+
+        return order;
+      },
+      { requireReplicaSet: true }
+    );
+  } catch (error) {
+    if (error instanceof InsufficientStockError) {
+      console.error(
+        `[STOCK_CRITIQUE] Order ${error.orderId} failed: Store ${error.storeId} has insufficient stock for product ${error.productId}`
       );
+      return await markOrderAsFailed(orderId, paymentIntentId);
     }
 
-    // 5. Update payment intent and save
-    order.paymentIntentId = paymentIntentId;
-
-    await order.save({ session });
-
-    return order;
-  });
+    throw error;
+  }
 };
 
 /**

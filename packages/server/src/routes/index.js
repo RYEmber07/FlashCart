@@ -9,6 +9,7 @@ import webhookRouter from './webhook.routes.js';
 import storeRouter from './store.routes.js';
 import riderRouter from './rider.routes.js';
 import adminRouter from './admin.routes.js';
+import docsRouter from './docs.routes.js';
 
 const rootRouter = express.Router();
 
@@ -32,5 +33,6 @@ rootRouter.use('/webhooks', webhookRouter);
 rootRouter.use('/stores', storeRouter);
 rootRouter.use('/riders', riderRouter);
 rootRouter.use('/admin', adminRouter);
+rootRouter.use('/docs', docsRouter);
 
 export default rootRouter;

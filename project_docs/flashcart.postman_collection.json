@@ -16,7 +16,7 @@
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test User\",\n  \"contactNumber\": \"9876543210\",\n  \"password\": \"SecurePass1\"\n}"
+              "raw": "{\n  \"name\": \"Test User\",\n  \"contactNumber\": \"9000000099\",\n  \"password\": \"UserPassword123\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/register",
@@ -47,7 +47,7 @@
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contactNumber\": \"9876543210\",\n  \"password\": \"SecurePass1\"\n}"
+              "raw": "{\n  \"contactNumber\": \"9876543210\",\n  \"password\": \"UserPassword123\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/login",
@@ -78,7 +78,7 @@
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contactNumber\": \"9999999999\",\n  \"password\": \"AdminPass1\"\n}"
+              "raw": "{\n  \"contactNumber\": \"9999999999\",\n  \"password\": \"AdminPassword123\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/login",
@@ -786,7 +786,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rahul Rider\",\n  \"phone\": \"8888877777\",\n  \"password\": \"RiderPass1\",\n  \"storeId\": \"{{STORE_ID}}\"\n}"
+              "raw": "{\n  \"name\": \"Rahul Rider\",\n  \"phone\": \"8888877777\",\n  \"password\": \"RiderPassword123\",\n  \"storeId\": \"{{STORE_ID}}\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/admin/riders",
@@ -817,7 +817,7 @@
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phone\": \"8888877777\",\n  \"password\": \"RiderPass1\"\n}"
+              "raw": "{\n  \"phone\": \"8888877777\",\n  \"password\": \"RiderPassword123\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/riders/auth/login",
@@ -875,6 +875,72 @@
               "raw": "{{BASE_URL}}/riders/complete-delivery",
               "host": ["{{BASE_URL}}"],
               "path": ["riders", "complete-delivery"]
+            }
+          }
+        },
+        {
+          "name": "Rider Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"PASTE_RIDER_REFRESH_TOKEN_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/riders/auth/refresh-token",
+              "host": ["{{BASE_URL}}"],
+              "path": ["riders", "auth", "refresh-token"]
+            }
+          }
+        },
+        {
+          "name": "Rider Logout",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{RIDER_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/riders/auth/logout",
+              "host": ["{{BASE_URL}}"],
+              "path": ["riders", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/health",
+              "host": ["{{BASE_URL}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "API Docs (Swagger UI)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/docs",
+              "host": ["{{BASE_URL}}"],
+              "path": ["docs"]
+            }
+          }
+        },
+        {
+          "name": "OpenAPI Spec (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/docs/openapi.json",
+              "host": ["{{BASE_URL}}"],
+              "path": ["docs", "openapi.json"]
             }
           }
         }
